@@ -28,7 +28,7 @@ class TQAgent:
 
         if self.gameboard.tile_size == 1:
             self.N_rot = 1
-        elif self.gameboard.tile_size == 2:
+        elif self.gameboard.tile_size >= 2:
             self.N_rot = 4
 
         num_boards = 2 ** (gameboard.N_row * gameboard.N_col)
@@ -51,8 +51,8 @@ class TQAgent:
         # TO BE COMPLETED BY STUDENT
         # Here you can load the Q-table (to Q-table of self) from the input parameter strategy_file (used to test how the agent plays)
 
-        # with h5py.File(strategy_file, "r") as f:
-        #     self.q_values = f["q_values"][:]
+        with h5py.File(strategy_file, "r") as f:
+            self.q_values = f["q_values"][:]
 
     def fn_read_state(self):
 
@@ -88,26 +88,31 @@ class TQAgent:
 
         board_state = self.state[0]
         tile_state = self.state[1]
-        current_state_values = self.q_values[board_state, tile_state, :, :].copy()
+        state_values = self.q_values[board_state, tile_state, :, :].copy()
         # print(current_state_values[:, 0])
         for x in range(0, self.gameboard.N_col):
             for rot in range(0, self.N_rot):
-                current_state_values[x, rot] += (
+                state_values[x, rot] += (
                     self.gameboard.fn_move(x, rot) * invalid_q
                 )
         # print(current_state_values[:, 0])
         # input()
+        flat_state_values = state_values.flatten()
 
-        flat_values = current_state_values.flatten()
-        max_value = np.max(flat_values)
-        max_indeces = np.where(flat_values == max_value)[0]
+        indicator = np.random.rand(1)[0]
+        if indicator <= self.epsilon:
+            allowed_actions = np.where(flat_state_values > invalid_q)[0]
+            action = np.random.choice(allowed_actions, size=1)[0]
+        else:
+            max_value = np.max(flat_state_values)
+            greedy_actions = np.where(flat_state_values == max_value)[0]
+            action = np.random.choice(greedy_actions, size=1)[0]
 
-        max_index = np.random.choice(max_indeces, size=1)[0]
-        max_index_x = max_index // current_state_values.shape[1]
-        max_index_rot = max_index % current_state_values.shape[1]
+        action_x = action // state_values.shape[1]
+        action_rot = action % state_values.shape[1]
 
-        self.gameboard.fn_move(max_index_x, max_index_rot)
-        self.action = np.array([max_index_x, max_index_rot])
+        self.gameboard.fn_move(action_x, action_rot)
+        self.action = np.array([action_x, action_rot])
 
         # Useful variables:
         # 'self.epsilon' parameter epsilon in epsilon-greedy policy
@@ -202,8 +207,6 @@ class TQAgent:
             self.reward_tots[self.episode] += reward
 
             # print(self.gameboard.board)
-            if reward < 0:
-                print(reward)
             # input()
 
 
