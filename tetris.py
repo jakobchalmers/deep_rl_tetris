@@ -16,9 +16,9 @@ human_player=0
 # human_player=1
 
 # Choose parameter sets for different tasks
-# param_set=PARAM_TASK1a
-param_set=PARAM_TASK1b
-#param_set=PARAM_TASK1c
+param_set=PARAM_TASK1a
+# param_set=PARAM_TASK1b
+# param_set=PARAM_TASK1c
 #param_set=PARAM_TASK1d
 #param_set=PARAM_TASK2a
 #param_set=PARAM_TASK2b
@@ -62,14 +62,13 @@ else:
 # 'sync_target_episode_count' is the number of epsiodes between synchronisations of the target network
 if param_set==PARAM_TASK1a:
 
+    # N_row=4
+    # N_col=4
+    # tile_size=2
+
     N_row=4
     N_col=4
     tile_size=2
-    # tile_size=1
-
-    # N_row=2
-    # N_col=2
-    # tile_size=1
 
     max_tile_count=50
     stochastic_prob=0

@@ -30,6 +30,7 @@ class TQAgent:
             self.N_rot = 1
         elif self.gameboard.tile_size >= 2:
             self.N_rot = 4
+            # self.N_rot = 1
 
         num_boards = 2 ** (gameboard.N_row * gameboard.N_col)
         num_tiles = len(gameboard.tiles)
@@ -92,7 +93,8 @@ class TQAgent:
         # print(current_state_values[:, 0])
         for x in range(0, self.gameboard.N_col):
             for rot in range(0, self.N_rot):
-                state_values[x, rot] += (
+                # TODO: set this value for the permanent q table?
+                self.q_values[board_state, tile_state, x, rot] += (
                     self.gameboard.fn_move(x, rot) * invalid_q
                 )
         # print(current_state_values[:, 0])
@@ -101,7 +103,7 @@ class TQAgent:
 
         indicator = np.random.rand(1)[0]
         if indicator <= self.epsilon:
-            allowed_actions = np.where(flat_state_values > invalid_q)[0]
+            allowed_actions = np.where(flat_state_values > invalid_q / 1e2)[0]
             action = np.random.choice(allowed_actions, size=1)[0]
         else:
             max_value = np.max(flat_state_values)
@@ -124,18 +126,18 @@ class TQAgent:
         # The function returns 1 if the action is not valid and 0 otherwise
         # You can use this function to map out which actions are valid or not
 
-    def fn_reinforce(self, old_state, reward):
+    def fn_reinforce(self, state, reward):
         # TO BE COMPLETED BY STUDENT
         # This function should be written by you
         # Instructions:
         # Update the Q table using state and action stored as attributes in self and using function arguments for the old state and the reward
         # This function should not return a value, the Q table is stored as an attribute of self
 
-        old_q_value = self.q_values[old_state[0], old_state[1], self.action[0], self.action[1]].copy()
+        q_value = self.q_values[state[0], state[1], self.action[0], self.action[1]].copy()
 
         max_next_q_value = np.max(self.q_values[self.state[0], self.state[1], :, :].flatten())
 
-        self.q_values[old_state[0], old_state[1], self.action[0], self.action[1]] = old_q_value + self.alpha * (reward + max_next_q_value - old_q_value)
+        self.q_values[state[0], state[1], self.action[0], self.action[1]] = q_value + self.alpha * (reward + max_next_q_value - q_value)
 
         # Useful variables:
         # 'self.alpha' learning rate
