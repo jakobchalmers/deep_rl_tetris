@@ -85,24 +85,29 @@ class TQAgent:
         # Choose and execute an action, based on the Q-table or random if epsilon greedy
         # This function should not return a value, store the action as an attribute of self and exectute the action by moving the tile to the desired position and orientation
 
-        invalid_q = - 1e6
+        # invalid_q = - np.inf
+        invalid_q = - 1e12
 
         board_state = self.state[0]
         tile_state = self.state[1]
-        state_values = self.q_values[board_state, tile_state, :, :].copy()
-        # print(current_state_values[:, 0])
-        for x in range(0, self.gameboard.N_col):
-            for rot in range(0, self.N_rot):
-                # TODO: set this value for the permanent q table?
-                self.q_values[board_state, tile_state, x, rot] += (
-                    self.gameboard.fn_move(x, rot) * invalid_q
+        for x_action in range(0, self.gameboard.N_col):
+            for rot_action in range(0, self.N_rot):
+
+                # unallowed = self.gameboard.fn_move(x_action, rot_action)
+                # if unallowed:
+                #     self.q_values[board_state, tile_state, x_action, rot_action] = invalid_q
+
+                self.q_values[board_state, tile_state, x_action, rot_action] += (
+                    self.gameboard.fn_move(x_action, rot_action) * invalid_q
                 )
-        # print(current_state_values[:, 0])
-        # input()
+
+        state_values = self.q_values[board_state, tile_state, :, :].copy()
         flat_state_values = state_values.flatten()
 
         indicator = np.random.rand(1)[0]
         if indicator <= self.epsilon:
+            # allowed_actions = np.where(flat_state_values > invalid_q)[0]
+
             allowed_actions = np.where(flat_state_values > invalid_q / 1e2)[0]
             action = np.random.choice(allowed_actions, size=1)[0]
         else:
@@ -110,11 +115,11 @@ class TQAgent:
             greedy_actions = np.where(flat_state_values == max_value)[0]
             action = np.random.choice(greedy_actions, size=1)[0]
 
-        action_x = action // state_values.shape[1]
-        action_rot = action % state_values.shape[1]
+        x_action = action // state_values.shape[1]
+        rot_action = action % state_values.shape[1]
 
-        self.gameboard.fn_move(action_x, action_rot)
-        self.action = np.array([action_x, action_rot])
+        self.gameboard.fn_move(x_action, rot_action)
+        self.action = np.array([x_action, rot_action])
 
         # Useful variables:
         # 'self.epsilon' parameter epsilon in epsilon-greedy policy
