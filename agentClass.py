@@ -30,7 +30,6 @@ class TQAgent:
             self.N_rot = 1
         elif self.gameboard.tile_size >= 2:
             self.N_rot = 4
-            # self.N_rot = 1
 
         num_boards = 2 ** (gameboard.N_row * gameboard.N_col)
         num_tiles = len(gameboard.tiles)
@@ -38,8 +37,6 @@ class TQAgent:
             (num_boards, num_tiles, gameboard.N_col, self.N_rot)
         )  # (state1, state2, action1, action2)
 
-        # self.fn_read_state()
-        # self.fn_select_action()
 
         # Useful variables:
         # 'gameboard.N_row' number of rows in gameboard
@@ -86,7 +83,6 @@ class TQAgent:
         # This function should not return a value, store the action as an attribute of self and exectute the action by moving the tile to the desired position and orientation
 
         invalid_q = - np.inf
-        # invalid_q = - 1e12
 
         board_state = self.state[0]
         tile_state = self.state[1]
@@ -97,10 +93,6 @@ class TQAgent:
                 if unallowed:
                     self.q_values[board_state, tile_state, x_action, rot_action] = invalid_q
 
-                # self.q_values[board_state, tile_state, x_action, rot_action] += (
-                #     self.gameboard.fn_move(x_action, rot_action) * invalid_q
-                # )
-
         state_values = self.q_values[board_state, tile_state, :, :].copy()
         flat_state_values = state_values.flatten()
 
@@ -108,7 +100,6 @@ class TQAgent:
         if indicator <= self.epsilon:
             allowed_actions = np.where(flat_state_values > invalid_q)[0]
 
-            # allowed_actions = np.where(flat_state_values > invalid_q / 1e2)[0]
             action = np.random.choice(allowed_actions, size=1)[0]
         else:
             max_value = np.max(flat_state_values)
@@ -131,18 +122,18 @@ class TQAgent:
         # The function returns 1 if the action is not valid and 0 otherwise
         # You can use this function to map out which actions are valid or not
 
-    def fn_reinforce(self, state, reward):
+    def fn_reinforce(self, old_state, reward):
         # TO BE COMPLETED BY STUDENT
         # This function should be written by you
         # Instructions:
         # Update the Q table using state and action stored as attributes in self and using function arguments for the old state and the reward
         # This function should not return a value, the Q table is stored as an attribute of self
 
-        q_value = self.q_values[state[0], state[1], self.action[0], self.action[1]].copy()
+        q_value = self.q_values[old_state[0], old_state[1], self.action[0], self.action[1]].copy()
 
-        max_next_q_value = np.max(self.q_values[self.state[0], self.state[1], :, :].flatten())
+        max_q_value = np.max(self.q_values[self.state[0], self.state[1], :, :].flatten())
 
-        self.q_values[state[0], state[1], self.action[0], self.action[1]] = q_value + self.alpha * (reward + max_next_q_value - q_value)
+        self.q_values[old_state[0], old_state[1], self.action[0], self.action[1]] = q_value + self.alpha * (reward + max_q_value - q_value)
 
         # Useful variables:
         # 'self.alpha' learning rate
@@ -189,11 +180,6 @@ class TQAgent:
             else:
                 self.gameboard.fn_restart()
         else:
-            # print(self.state)
-            # print(self.gameboard.board)
-            # print(self.reward_tots[self.episode])
-            # print(self.q_values[:, 0, :, 0])
-            # input()
 
             # Select and execute action (move the tile to the desired column and orientation)
             self.fn_select_action()
@@ -201,21 +187,12 @@ class TQAgent:
             # Here you should write line(s) to copy the old state into the variable 'old_state' which is later passed to fn_reinforce()
             old_state = np.copy(self.state)
 
-            # print(self.gameboard.board)
-            # print(self.gameboard.tile_x)
-            # print(self.q_values[5, 0, :, 0], self.q_values[10, 0, :, 0])
-
-
             # Drop the tile on the game board
             reward = self.gameboard.fn_drop()
 
             # TO BE COMPLETED BY STUDENT
             # Here you should write line(s) to add the current reward to the total reward for the current episode, so you can save it to disk later
             self.reward_tots[self.episode] += reward
-
-            # print(self.gameboard.board)
-            # input()
-
 
 
             # Read the new state

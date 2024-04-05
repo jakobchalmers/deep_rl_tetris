@@ -17,9 +17,9 @@ human_player=0
 
 # Choose parameter sets for different tasks
 # param_set=PARAM_TASK1a
-param_set=PARAM_TASK1b
-# param_set=PARAM_TASK1c
-#param_set=PARAM_TASK1d
+# param_set=PARAM_TASK1b
+param_set=PARAM_TASK1c
+# param_set=PARAM_TASK1d
 #param_set=PARAM_TASK2a
 #param_set=PARAM_TASK2b
 
@@ -30,6 +30,8 @@ if param_set==PARAM_TASK1a:
 elif param_set==PARAM_TASK1b:
     strategy_file=''
 elif param_set==PARAM_TASK1c:
+    strategy_file='strategy/1c_240405.h5'
+elif param_set==PARAM_TASK1d:
     strategy_file=''
 elif param_set==PARAM_TASK2a:
     strategy_file=''
