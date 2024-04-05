@@ -131,7 +131,7 @@ class TQAgent:
 
         q_value = self.q_values[old_state[0], old_state[1], self.action[0], self.action[1]].copy()
 
-        max_q_value = np.max(self.q_values[self.state[0], self.state[1], :, :].flatten())
+        max_q_value = (1 - self.gameboard.gameover) * np.max(self.q_values[self.state[0], self.state[1], :, :].flatten())
 
         self.q_values[old_state[0], old_state[1], self.action[0], self.action[1]] = q_value + self.alpha * (reward + max_q_value - q_value)
 
