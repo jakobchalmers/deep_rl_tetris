@@ -396,21 +396,20 @@ class TDQNAgent:
         self.online_network.train(True)
 
         batch = torch.stack(batch)
-
-        # TODO: add gameover element to batch
         old_states = batch[:, 0, :]
         actions = batch[:, 1, 0].to(torch.int64).unsqueeze(1)
         rewards = batch[:, 2, 0]
         states = batch[:, 3, :]
+        is_terminal = batch[:, 4, 0].to(torch.bool)
 
         online_old_q_values = self.online_network(old_states)
         online_old_selected_q_values = torch.gather(online_old_q_values, index=actions, dim=1).squeeze(dim=1) # careful with dim here
 
         target_q_values = self.target_network(states)
-        _, max_target_q_values = torch.max(target_q_values, dim=1)
-        y = rewards + max_target_q_values 
+        max_target_q_values, _ = torch.max(target_q_values, dim=1)
+        y = rewards + (~is_terminal * max_target_q_values)
 
-        loss = self.criterion(online_old_selected_q_values, y.detach()) # TODO: why use y.detach() ?
+        loss = self.criterion(online_old_selected_q_values, y.detach()) # TODO: try removing y.detach()
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -488,10 +487,12 @@ class TDQNAgent:
             # TO BE COMPLETED BY STUDENT
             # Here you should write line(s) to store the state in the experience replay buffer
 
-            ones = torch.ones(old_state.shape[0])
+            state_dim = old_state.shape[0]
+            ones = torch.ones(state_dim)
             extended_action = ones * self.action
             extended_reward = ones * reward
-            quadruple = torch.stack((old_state, extended_action, extended_reward, self.state))
+            is_terminal = ones * self.gameboard.gameover
+            quadruple = torch.stack((old_state, extended_action, extended_reward, self.state, is_terminal))
             self.exp_buffer.append(quadruple)  
 
             # if len(self.exp_buffer) >= self.replay_buffer_size:
