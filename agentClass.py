@@ -260,16 +260,17 @@ class TDQNAgent:
             
         
         state_dim = gameboard.N_row * gameboard.N_col + len(gameboard.tiles) 
-        self.N_rot = 4
+
+        self.N_rot = 1 if self.gameboard.tile_size == 1 else 4
+        
         num_actions = gameboard.N_col * self.N_rot
+
         hidden_features = 64
-
         self.online_network = QNetwork(state_dim, hidden_features, hidden_features, num_actions)
-
         self.target_network = QNetwork(state_dim, hidden_features, hidden_features, num_actions)
         self.target_network.load_state_dict(self.online_network.state_dict())
 
-        self.environment_step = 0
+        # self.environment_step = 0
         # self.exp_buffer = {
         #     "states": torch.zeros((self.replay_buffer_size, state_dim)),
         #     "actions": torch.zeros((self.replay_buffer_size, 1)),
@@ -371,9 +372,6 @@ class TDQNAgent:
         self.action = action
 
         
-        # self.exp_buffer["states"][self.environment_step % self.replay_buffer_size] = self.state
-        # self.exp_buffer["actions"][self.environment_step % self.replay_buffer_size] = action
-
         # Useful variables:
         # 'self.epsilon' parameter epsilon in epsilon-greedy policy
         # 'self.epsilon_scale' parameter for the scale of the episode number where epsilon_N changes from unity to epsilon
