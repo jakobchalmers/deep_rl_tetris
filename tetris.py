@@ -125,13 +125,14 @@ elif param_set==PARAM_TASK1d:
     if (not human_player) or evaluate_agent:
         agent=agentClass.TQAgent(alpha,epsilon,episode_count)
 elif param_set==PARAM_TASK2a:
-    N_row=4
-    N_col=4
-    tile_size=2
 
-    # N_row=2
-    # N_col=2
-    # tile_size=1
+    # N_row=4
+    # N_col=4
+    # tile_size=2
+
+    N_row=2
+    N_col=2
+    tile_size=1
 
     max_tile_count=50
     stochastic_prob=1

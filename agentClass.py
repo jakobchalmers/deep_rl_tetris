@@ -270,18 +270,6 @@ class TDQNAgent:
         self.target_network = QNetwork(state_dim, hidden_features, hidden_features, num_actions)
         self.target_network.load_state_dict(self.online_network.state_dict())
 
-        # self.environment_step = 0
-        # self.exp_buffer = {
-        #     "states": torch.zeros((self.replay_buffer_size, state_dim)),
-        #     "actions": torch.zeros((self.replay_buffer_size, 1)),
-        #     "next_states": torch.zeros((self.replay_buffer_size, state_dim)),
-        #     "rewards": torch.zeros((self.replay_buffer_size, 1)),
-        #     # "states": [],
-        #     # "actions": [],
-        #     # "next_states": [],
-        #     # "rewards": [],
-        # }
-
         self.exp_buffer = []
 
         self.optimizer = torch.optim.Adam(self.online_network.parameters(), lr=self.alpha)
@@ -315,11 +303,6 @@ class TDQNAgent:
         # This function should not return a value, store the state as an attribute of self
 
         board_state = torch.from_numpy(self.gameboard.board.flatten())
-        
-        # TODO: remove this 
-        # assert(self.gameboard.tile_size == 2)
-        # tile_state = torch.tensor([self.gameboard.cur_tile_type // 2, self.gameboard.cur_tile_type % 2]) * 2 - 1
-
         tile_state = - torch.ones((len(self.gameboard.tiles)))
         tile_state[self.gameboard.cur_tile_type] = 1
         self.state = torch.cat((board_state, tile_state))
