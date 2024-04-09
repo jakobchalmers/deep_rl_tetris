@@ -277,6 +277,8 @@ class TDQNAgent:
 
         self.reward_tots = np.zeros(self.episode_count)
 
+        self.invalid_action_punishment = - 50
+
 
         
 
@@ -323,24 +325,27 @@ class TDQNAgent:
         # Choose and execute an action, based on the output of the Q-network for the current state, or random if epsilon greedy
         # This function should not return a value, store the action as an attribute of self and exectute the action by moving the tile to the desired position and orientation
 
-        invalid_q = - torch.inf
 
         q_values = self.online_network(self.state)
-        for x_action in range(0, self.gameboard.N_col):
-            for rot_action in range(0, self.N_rot):
-                unallowed = self.gameboard.fn_move(x_action, rot_action)
-                if unallowed:
-                    q_values[x_action * self.N_rot + rot_action] = invalid_q
+
+        # invalid_q = - torch.inf
+        # for x_action in range(0, self.gameboard.N_col):
+        #     for rot_action in range(0, self.N_rot):
+        #         unallowed = self.gameboard.fn_move(x_action, rot_action)
+        #         if unallowed:
+        #             q_values[x_action * self.N_rot + rot_action] = invalid_q
 
         # Decrease epsilon after episode
         self.epsilon_E = max(self.epsilon, 1 - self.episode / self.epsilon_scale) # TODO: test multiply with epsilon?
 
         indicator = np.random.rand() 
         if indicator <= self.epsilon_E:
-            allowed_actions = torch.where(q_values > invalid_q)[0]
 
-            rand_index = np.random.randint(0, len(allowed_actions))
-            action = allowed_actions[rand_index]
+            # allowed_actions = torch.where(q_values > invalid_q)[0]
+            # rand_index = np.random.randint(0, len(allowed_actions))
+            # action = allowed_actions[rand_index]
+            
+            action = np.random.randint(0, q_values.shape[0])
         
         else:
             max_q_value = torch.max(q_values)
@@ -348,9 +353,10 @@ class TDQNAgent:
             rand_index = np.random.randint(0, len(greedy_actions))
             action = greedy_actions[rand_index]
 
+
         x_action = action // len(q_values)
         rot_action = action % len(q_values)
-        self.gameboard.fn_move(x_action, rot_action)
+        self.action_invalid = self.gameboard.fn_move(x_action, rot_action)
 
         self.action = action
 
@@ -406,7 +412,6 @@ class TDQNAgent:
         if self.gameboard.gameover:
             self.episode += 1
 
-
             if self.episode % 100 == 0:
                 print(
                     "episode "
@@ -460,6 +465,10 @@ class TDQNAgent:
             # Drop the tile on the game board
             reward = self.gameboard.fn_drop()
 
+            reward += self.action_valid * self.invalid_action_punishment
+
+            
+
             # TO BE COMPLETED BY STUDENT
             # Here you should write line(s) to add the current reward to the total reward for the current episode, so you can save it to disk later
             self.reward_tots[self.episode] += reward
@@ -475,8 +484,8 @@ class TDQNAgent:
             extended_action = ones * self.action
             extended_reward = ones * reward
             is_terminal = ones * self.gameboard.gameover
-            quadruple = torch.stack((old_state, extended_action, extended_reward, self.state, is_terminal))
-            self.exp_buffer.append(quadruple)  
+            quadruplet = torch.stack((old_state, extended_action, extended_reward, self.state, is_terminal))
+            self.exp_buffer.append(quadruplet)  
 
             # if len(self.exp_buffer) >= self.replay_buffer_size:
             if len(self.exp_buffer) > self.replay_buffer_size:
@@ -486,9 +495,7 @@ class TDQNAgent:
 
                 batch = random.sample(self.exp_buffer, self.batch_size)
                 self.fn_reinforce(batch)
-            
-            # self.environment_step += 1
-            
+
 
 class THumanAgent:
     def fn_init(self, gameboard):

@@ -18,9 +18,9 @@ human_player=0
 # Choose parameter sets for different tasks
 # param_set=PARAM_TASK1a
 # param_set=PARAM_TASK1b
-# param_set=PARAM_TASK1c
+param_set=PARAM_TASK1c
 # param_set=PARAM_TASK1d
-param_set=PARAM_TASK2a
+# param_set=PARAM_TASK2a
 #param_set=PARAM_TASK2b
 
 # Use files to evaluate strategy
@@ -130,8 +130,8 @@ elif param_set==PARAM_TASK2a:
     # N_col=4
     # tile_size=2
 
-    N_row=2
-    N_col=2
+    N_row=4
+    N_col=4
     tile_size=1
 
     max_tile_count=50
@@ -259,7 +259,3 @@ else:
     # The player is AI
     while True:
         gameboard.agent.fn_turn()
-
-
-
-
