@@ -277,7 +277,6 @@ class TDQNAgent:
 
         self.reward_tots = np.zeros(self.episode_count)
 
-        self.invalid_action_punishment = - 50
 
 
         
@@ -465,7 +464,8 @@ class TDQNAgent:
             # Drop the tile on the game board
             reward = self.gameboard.fn_drop()
 
-            reward += self.action_valid * self.invalid_action_punishment
+            invalid_action_punishment = - 50
+            reward += self.action_invalid * invalid_action_punishment
 
             
 
