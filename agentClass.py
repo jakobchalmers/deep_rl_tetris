@@ -235,52 +235,6 @@ class TDQNAgent:
         # You can use any framework for constructing the networks, for example pytorch or tensorflow
         # This function should not return a value, store Q network etc as attributes of self
 
-        class QNetwork(nn.Module):
-            def __init__(self, state_dim, hidden_features_1, hidden_features_2, num_actions):
-                super().__init__()
-
-                self.layer1 = nn.Linear(state_dim, hidden_features_1)
-                self.activation1 = nn.ReLU()
-
-                self.layer2 = nn.Linear(hidden_features_1, hidden_features_2)
-                self.activation2 = nn.ReLU()
-
-                self.layer3 = nn.Linear(hidden_features_2, num_actions)
-            
-            def forward(self, states):
-                x = self.layer1(states)
-                x = self.activation1(x)
-
-                x = self.layer2(x)
-                x = self.activation2(x)
-
-                q_values = self.layer3(x)
-
-                return q_values
-            
-        
-        state_dim = gameboard.N_row * gameboard.N_col + len(gameboard.tiles) 
-
-        self.N_rot = 1 if self.gameboard.tile_size == 1 else 4
-        
-        num_actions = gameboard.N_col * self.N_rot
-
-        hidden_features = 64
-        self.online_network = QNetwork(state_dim, hidden_features, hidden_features, num_actions)
-        self.target_network = QNetwork(state_dim, hidden_features, hidden_features, num_actions)
-        self.target_network.load_state_dict(self.online_network.state_dict())
-
-        self.exp_buffer = []
-
-        self.optimizer = torch.optim.Adam(self.online_network.parameters(), lr=self.alpha)
-        self.criterion = nn.MSELoss() 
-
-        self.reward_tots = np.zeros(self.episode_count)
-
-
-
-        
-
         # Useful variables:
         # 'gameboard.N_row' number of rows in gameboard
         # 'gameboard.N_col' number of columns in gameboard
@@ -289,13 +243,67 @@ class TDQNAgent:
         # 'self.episode_count' the total number of episodes in the training
         # 'self.replay_buffer_size' the number of quadruplets stored in the experience replay buffer
 
+        class QNetwork(nn.Module):
+            def __init__(
+                self, state_dim, hidden_features_1, hidden_features_2, num_action
+            ):
+                super().__init__()
+
+                self.layer1 = nn.Linear(state_dim, hidden_features_1)
+                self.activation1 = nn.ReLU()
+
+                self.layer2 = nn.Linear(hidden_features_1, hidden_features_2)
+                self.activation2 = nn.ReLU()
+
+                self.layer3 = nn.Linear(hidden_features_2, num_action)
+
+            def forward(self, x):
+                x = self.layer1(x)
+                x = self.activation1(x)
+
+                x = self.layer2(x)
+                x = self.activation2(x)
+
+                x = self.layer3(x)  # q-values
+
+                return x
+
+        state_dim = gameboard.N_row * gameboard.N_col + len(gameboard.tiles)
+        self.N_rotations = 4
+        self.num_actions = gameboard.N_col * self.N_rotations
+
+        self.online_network = QNetwork(
+            state_dim=state_dim,
+            hidden_features_1=64,
+            hidden_features_2=64,
+            num_action=self.num_actions,
+        )
+
+        # self.target_network = self.online_network
+        self.target_network = QNetwork(
+            state_dim=state_dim,
+            hidden_features_1=64,
+            hidden_features_2=64,
+            num_action=self.num_actions,
+        )
+        self.target_network.load_state_dict(self.online_network.state_dict())
+
+        self.criterion = nn.MSELoss()
+        self.optimizer = torch.optim.Adam(
+            self.online_network.parameters(), lr=self.alpha
+        )
+
+        self.environment_step = 0
+        self.exp_buffer = []
+
+        self.reward_tots = np.zeros(self.episode_count)
+
     def fn_load_strategy(self, strategy_file):
         pass
         # TO BE COMPLETED BY STUDENT
         # Here you can load the Q-network (to Q-network of self) from the strategy_file
 
     def fn_read_state(self):
-        pass
         # TO BE COMPLETED BY STUDENT
         # This function should be written by you
         # Instructions:
@@ -303,63 +311,25 @@ class TDQNAgent:
         # You can for example represent the state as a copy of the game board and the identifier of the current tile
         # This function should not return a value, store the state as an attribute of self
 
-        board_state = torch.from_numpy(self.gameboard.board.flatten())
-        tile_state = - torch.ones((len(self.gameboard.tiles)))
-        tile_state[self.gameboard.cur_tile_type] = 1
-        self.state = torch.cat((board_state, tile_state))
-
-        
-
         # Useful variables:
         # 'self.gameboard.N_row' number of rows in gameboard
         # 'self.gameboard.N_col' number of columns in gameboard
         # 'self.gameboard.board[index_row,index_col]' table indicating if row 'index_row' and column 'index_col' is occupied (+1) or free (-1)
         # 'self.gameboard.cur_tile_type' identifier of the current tile that should be placed on the game board (integer between 0 and len(self.gameboard.tiles))
 
+        board_state = torch.from_numpy(self.gameboard.board.flatten())
+
+        tile_state = torch.zeros(len(self.gameboard.tiles))
+        tile_state[self.gameboard.cur_tile_type] = 1
+        self.state = torch.cat((board_state, tile_state))
+
     def fn_select_action(self):
-        pass
         # TO BE COMPLETED BY STUDENT
         # This function should be written by you
         # Instructions:
         # Choose and execute an action, based on the output of the Q-network for the current state, or random if epsilon greedy
         # This function should not return a value, store the action as an attribute of self and exectute the action by moving the tile to the desired position and orientation
 
-
-        q_values = self.online_network(self.state)
-
-        # invalid_q = - torch.inf
-        # for x_action in range(0, self.gameboard.N_col):
-        #     for rot_action in range(0, self.N_rot):
-        #         unallowed = self.gameboard.fn_move(x_action, rot_action)
-        #         if unallowed:
-        #             q_values[x_action * self.N_rot + rot_action] = invalid_q
-
-        # Decrease epsilon after episode
-        self.epsilon_E = max(self.epsilon, 1 - self.episode / self.epsilon_scale) # TODO: test multiply with epsilon?
-
-        indicator = np.random.rand() 
-        if indicator <= self.epsilon_E:
-
-            # allowed_actions = torch.where(q_values > invalid_q)[0]
-            # rand_index = np.random.randint(0, len(allowed_actions))
-            # action = allowed_actions[rand_index]
-            
-            action = np.random.randint(0, q_values.shape[0])
-        
-        else:
-            max_q_value = torch.max(q_values)
-            greedy_actions = torch.where(q_values == max_q_value)[0]
-            rand_index = np.random.randint(0, len(greedy_actions))
-            action = greedy_actions[rand_index]
-
-
-        x_action = action // len(q_values)
-        rot_action = action % len(q_values)
-        self.action_invalid = self.gameboard.fn_move(x_action, rot_action)
-
-        self.action = action
-
-        
         # Useful variables:
         # 'self.epsilon' parameter epsilon in epsilon-greedy policy
         # 'self.epsilon_scale' parameter for the scale of the episode number where epsilon_N changes from unity to epsilon
@@ -370,9 +340,40 @@ class TDQNAgent:
         # The input argument 'tile_orientation' contains the number of 90 degree rotations of the tile (0 < tile_orientation < # of non-degenerate rotations)
         # The function returns 1 if the action is not valid and 0 otherwise
         # You can use this function to map out which actions are valid or not
+        invalid_q = -torch.inf
+
+        q_values = self.online_network(self.state)
+        # Create a tensor to store the validity of each action
+        # for x_action in range(0, self.gameboard.N_col):
+        #     for rotation_action in range(0, self.N_rotations):
+        #         unallowed = self.gameboard.fn_move(x_action, rotation_action)
+        #         if unallowed:
+        #             q_values[x_action * self.N_rotations + rotation_action] = invalid_q
+
+        self.epsilon_E = max(
+            self.epsilon, (1 - self.episode / self.epsilon_scale)
+        )  # TODO: check if this is correct
+
+        indicator = np.random.rand()
+        if indicator <= self.epsilon_E:
+            # allowed_actions = torch.where(q_values != invalid_q)[0]
+            # random_index = np.random.randint(0, len(allowed_actions))
+            # index = allowed_actions[random_index]
+            # if self.episode % 10 == 0:
+            #     print("Random action")
+            index = np.random.randint(0, len(q_values))
+        else:
+            max_q_value = torch.max(q_values)
+            greedy_actions = torch.where(q_values == max_q_value)[0]
+            random_index = np.random.randint(0, len(greedy_actions))
+            index = greedy_actions[random_index]
+
+        self.action = index
+        tile_x = self.action // self.N_rotations
+        tile_orientation = self.action % self.N_rotations
+        self.action_invalid = self.gameboard.fn_move(tile_x, tile_orientation)
 
     def fn_reinforce(self, batch):
-        pass
         # TO BE COMPLETED BY STUDENT
         # This function should be written by you
         # Instructions:
@@ -381,9 +382,13 @@ class TDQNAgent:
         # Then repeat for the target network to calculate the value \hat Q(s_new,a) of the new state (use \hat Q=0 if the new state is terminal)
         # This function should not return a value, the Q table is stored as an attribute of self
 
-        self.online_network.train(True)
+        # Useful variables:
+        # The input argument 'batch' contains a sample of quadruplets used to update the Q-network
+
+        self.online_network.train()
 
         batch = torch.stack(batch)
+
         old_states = batch[:, 0, :]
         actions = batch[:, 1, 0].to(torch.int64).unsqueeze(1)
         rewards = batch[:, 2, 0]
@@ -391,27 +396,25 @@ class TDQNAgent:
         is_terminal = batch[:, 4, 0].to(torch.bool)
 
         online_old_q_values = self.online_network(old_states)
-        online_old_selected_q_values = torch.gather(online_old_q_values, index=actions, dim=1).squeeze(dim=1) # careful with dim here
-
+        online_old_q_values = online_old_q_values.gather(1, actions).squeeze(1)
         target_q_values = self.target_network(states)
-        max_target_q_values, _ = torch.max(target_q_values, dim=1)
-        y = rewards + (~is_terminal * max_target_q_values)
+        DISCOUNT_FACTOR = 0.99
+        y = rewards + DISCOUNT_FACTOR*(~is_terminal * torch.max(target_q_values, dim=1)[0])
 
-        loss = self.criterion(online_old_selected_q_values, y.detach()) # TODO: try removing y.detach()
+        loss = self.criterion(online_old_q_values, y.detach()) # TODO: check if detach is correct
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        
-        
 
-        # Useful variables:
-        # The input argument 'batch' contains a sample of quadruplets used to update the Q-network
+        
+        
 
     def fn_turn(self):
         if self.gameboard.gameover:
             self.episode += 1
 
-            if self.episode % 100 == 0:
+            if self.episode % 10 == 0:
+            # if self.episode % 100 == 0:
                 print(
                     "episode "
                     + str(self.episode)
@@ -439,7 +442,9 @@ class TDQNAgent:
                     1000000,
                 ]
                 if self.episode in saveEpisodes:
-                    pass
+                    with h5py.File("rewards.h5", "w") as f:
+                        f.create_dataset(f"reward_tots", data=self.reward_tots)
+                    torch.save(self.online_network.state_dict(), "Q_network.pth")
                     # TO BE COMPLETED BY STUDENT
                     # Here you can save the rewards and the Q-network to data files
             if self.episode >= self.episode_count:
@@ -448,11 +453,9 @@ class TDQNAgent:
                 if (len(self.exp_buffer) >= self.replay_buffer_size) and (
                     (self.episode % self.sync_target_episode_count) == 0
                 ):
-                    pass
+                    self.target_network.load_state_dict(self.online_network.state_dict())
                     # TO BE COMPLETED BY STUDENT
                     # Here you should write line(s) to copy the current network to the target network
-                    self.target_network.load_state_dict(self.online_network.state_dict())
-
                 self.gameboard.fn_restart()
         else:
             # Select and execute action (move the tile to the desired column and orientation)
@@ -460,14 +463,16 @@ class TDQNAgent:
             # TO BE COMPLETED BY STUDENT
             # Here you should write line(s) to copy the old state into the variable 'old_state' which is later stored in the ecperience replay buffer
             old_state = self.state.clone()
-            
+
             # Drop the tile on the game board
-            reward = self.gameboard.fn_drop()
+            # reward = self.gameboard.fn_drop()
+            INVALID_ACTION_PUNISHMENT = - 90
+            # reward += self.action_invalid * INVALID_ACTION_PUNISHMENT
+            if self.action_invalid:
+                reward = INVALID_ACTION_PUNISHMENT
+            else:
+                reward = self.gameboard.fn_drop()
 
-            invalid_action_punishment = - 50
-            reward += self.action_invalid * invalid_action_punishment
-
-            
 
             # TO BE COMPLETED BY STUDENT
             # Here you should write line(s) to add the current reward to the total reward for the current episode, so you can save it to disk later
@@ -478,24 +483,26 @@ class TDQNAgent:
 
             # TO BE COMPLETED BY STUDENT
             # Here you should write line(s) to store the state in the experience replay buffer
+            state_dimension = self.state.shape[0]
+            is_terminal = self.gameboard.gameover*torch.ones(state_dimension)
+            quadruplet = torch.stack(
+                (
+                    old_state,
+                    torch.ones(state_dimension) * self.action,
+                    torch.ones(state_dimension) * reward,
+                    self.state,
+                    is_terminal,
+                )
+            )
 
-            state_dim = old_state.shape[0]
-            ones = torch.ones(state_dim)
-            extended_action = ones * self.action
-            extended_reward = ones * reward
-            is_terminal = ones * self.gameboard.gameover
-            quadruplet = torch.stack((old_state, extended_action, extended_reward, self.state, is_terminal))
-            self.exp_buffer.append(quadruplet)  
+            self.exp_buffer.append(quadruplet)
 
-            # if len(self.exp_buffer) >= self.replay_buffer_size:
-            if len(self.exp_buffer) > self.replay_buffer_size:
+            if len(self.exp_buffer) > self.replay_buffer_size:  # >= ??
+                self.exp_buffer.pop(0)
                 # TO BE COMPLETED BY STUDENT
                 # Here you should write line(s) to create a variable 'batch' containing 'self.batch_size' quadruplets
-                self.exp_buffer.pop(0)
-
                 batch = random.sample(self.exp_buffer, self.batch_size)
                 self.fn_reinforce(batch)
-
 
 class THumanAgent:
     def fn_init(self, gameboard):

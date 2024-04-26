@@ -132,7 +132,7 @@ elif param_set==PARAM_TASK2a:
 
     N_row=4
     N_col=4
-    tile_size=1
+    tile_size=2
 
     max_tile_count=50
     stochastic_prob=1
@@ -186,7 +186,7 @@ if evaluate_agent:
     agent_evaluate.fn_init(gameboard)
     agent_evaluate.fn_load_strategy(strategy_file)
 
-if isinstance(gameboard.agent,agentClass.THumanAgent):
+if isinstance(gameboard.agent, agentClass.THumanAgent):
     # The player is human
 
     # Define some colors for painting
