@@ -16,34 +16,32 @@ human_player=0
 # human_player=1
 
 # Choose parameter sets for different tasks
-# param_set=PARAM_TASK1a
+param_set=PARAM_TASK1a
 # param_set=PARAM_TASK1b
 # param_set=PARAM_TASK1c
 # param_set=PARAM_TASK1d
-param_set=PARAM_TASK2a
+# param_set=PARAM_TASK2a
 #param_set=PARAM_TASK2b
 
 # Use files to evaluate strategy
 # If you change 'strategy_file' to the location of a file containing a stored Q-table or Q-network, you can evaluate the success of the found strategy
 if param_set==PARAM_TASK1a:
-    strategy_file=''
-    # strategy_file='strategy.h5'
+    strategy_file="strategy_1a.h5"
 elif param_set==PARAM_TASK1b:
-    strategy_file=''
+    strategy_file="strategy_1b.h5"
 elif param_set==PARAM_TASK1c:
-#    strategy_file='strategy/1c_240405.h5'
-#    strategy_file='strategy/1c_240405_0921.h5'
-    strategy_file=''
+    strategy_file="strategy_1c.h5"
 elif param_set==PARAM_TASK1d:
     strategy_file=''
 elif param_set==PARAM_TASK2a:
-    strategy_file=''
+    strategy_file="strategy_2a.h5"
 elif param_set==PARAM_TASK2b:
     strategy_file=''
 
 if strategy_file:
-    evaluate_agent=1
-    human_player=1
+    # evaluate_agent=1
+    # human_player=1
+    evaluate_agent = 0
 else:
     evaluate_agent=0
 
@@ -67,10 +65,6 @@ else:
 # 'sync_target_episode_count' is the number of epsiodes between synchronisations of the target network
 if param_set==PARAM_TASK1a:
 
-    # N_row=4
-    # N_col=4
-    # tile_size=2
-
     N_row=4
     N_col=4
     tile_size=2
@@ -83,7 +77,8 @@ if param_set==PARAM_TASK1a:
     episode_count=1000
 
     if (not human_player) or evaluate_agent:
-        agent=agentClass.TQAgent(alpha,epsilon,episode_count)
+        # agent=agentClass.TQAgent(alpha,epsilon,episode_count)
+        agent=agentClass.TQAgent(alpha,epsilon,episode_count,strategy_file)
 
 elif param_set==PARAM_TASK1b:
     N_row=4
@@ -97,7 +92,8 @@ elif param_set==PARAM_TASK1b:
     episode_count=10000
 
     if (not human_player) or evaluate_agent:
-        agent=agentClass.TQAgent(alpha,epsilon,episode_count)
+        # agent=agentClass.TQAgent(alpha,epsilon,episode_count)
+        agent=agentClass.TQAgent(alpha,epsilon,episode_count, strategy_file)
 elif param_set==PARAM_TASK1c:
     N_row=4
     N_col=4
@@ -110,7 +106,8 @@ elif param_set==PARAM_TASK1c:
     episode_count=200000
 
     if (not human_player) or evaluate_agent:
-        agent=agentClass.TQAgent(alpha,epsilon,episode_count)
+        # agent=agentClass.TQAgent(alpha,epsilon,episode_count)
+        agent=agentClass.TQAgent(alpha,epsilon,episode_count, strategy_file)
 elif param_set==PARAM_TASK1d:
     N_row=8
     N_col=8
@@ -125,10 +122,6 @@ elif param_set==PARAM_TASK1d:
     if (not human_player) or evaluate_agent:
         agent=agentClass.TQAgent(alpha,epsilon,episode_count)
 elif param_set==PARAM_TASK2a:
-
-    # N_row=4
-    # N_col=4
-    # tile_size=2
 
     N_row=4
     N_col=4
@@ -147,7 +140,9 @@ elif param_set==PARAM_TASK2a:
     sync_target_episode_count=100
 
     if (not human_player) or evaluate_agent:
-        agent=agentClass.TDQNAgent(alpha,epsilon,epsilon_scale,replay_buffer_size,batch_size,sync_target_episode_count,episode_count)
+        # agent=agentClass.TDQNAgent(alpha,epsilon,epsilon_scale,replay_buffer_size,batch_size,sync_target_episode_count,episode_count)
+        agent=agentClass.TDQNAgent(alpha,epsilon,epsilon_scale,replay_buffer_size,batch_size,sync_target_episode_count,episode_count, strategy_file)
+
 elif param_set==PARAM_TASK2b:
     N_row=8
     N_col=8

@@ -12,12 +12,13 @@ import random
 
 class TQAgent:
     # Agent for learning to play tetris using Q-learning
-    def __init__(self, alpha, epsilon, episode_count):
+    def __init__(self, alpha, epsilon, episode_count, strategy_file):
         # Initialize training parameters
         self.alpha = alpha
         self.epsilon = epsilon
         self.episode = 0
         self.episode_count = episode_count
+        self.strategy_file = strategy_file
 
     def fn_init(self, gameboard):
         self.gameboard = gameboard
@@ -174,7 +175,8 @@ class TQAgent:
                 if self.episode in saveEpisodes:
                     # TO BE COMPLETED BY STUDENT
                     # Here you can save the rewards and the Q-table to data files for plotting of the rewards and the Q-table can be used to test how the agent plays
-                    with h5py.File("strategy.h5", "w") as f:
+                    # strategy_file = "strategy_1b.h5"
+                    with h5py.File(self.strategy_file, "w") as f:
                         f.create_dataset("q_values", data=self.q_values)
                         f.create_dataset("reward_tots", data=self.reward_tots)
 
@@ -215,6 +217,7 @@ class TDQNAgent:
         batch_size,
         sync_target_episode_count,
         episode_count,
+        strategy_file
     ):
         # Initialize training parameters
         self.alpha = alpha
@@ -225,6 +228,7 @@ class TDQNAgent:
         self.sync_target_episode_count = sync_target_episode_count
         self.episode = 0
         self.episode_count = episode_count
+        self.strategy_file = strategy_file
 
     def fn_init(self, gameboard):
         self.gameboard = gameboard
@@ -279,7 +283,6 @@ class TDQNAgent:
             num_action=self.num_actions,
         )
 
-        # self.target_network = self.online_network
         self.target_network = QNetwork(
             state_dim=state_dim,
             hidden_features_1=64,
@@ -340,27 +343,15 @@ class TDQNAgent:
         # The input argument 'tile_orientation' contains the number of 90 degree rotations of the tile (0 < tile_orientation < # of non-degenerate rotations)
         # The function returns 1 if the action is not valid and 0 otherwise
         # You can use this function to map out which actions are valid or not
-        invalid_q = -torch.inf
 
         q_values = self.online_network(self.state)
-        # Create a tensor to store the validity of each action
-        # for x_action in range(0, self.gameboard.N_col):
-        #     for rotation_action in range(0, self.N_rotations):
-        #         unallowed = self.gameboard.fn_move(x_action, rotation_action)
-        #         if unallowed:
-        #             q_values[x_action * self.N_rotations + rotation_action] = invalid_q
 
         self.epsilon_E = max(
             self.epsilon, (1 - self.episode / self.epsilon_scale)
-        )  # TODO: check if this is correct
+        )
 
         indicator = np.random.rand()
         if indicator <= self.epsilon_E:
-            # allowed_actions = torch.where(q_values != invalid_q)[0]
-            # random_index = np.random.randint(0, len(allowed_actions))
-            # index = allowed_actions[random_index]
-            # if self.episode % 10 == 0:
-            #     print("Random action")
             index = np.random.randint(0, len(q_values))
         else:
             max_q_value = torch.max(q_values)
@@ -401,7 +392,7 @@ class TDQNAgent:
         DISCOUNT_FACTOR = 0.99
         y = rewards + DISCOUNT_FACTOR*(~is_terminal * torch.max(target_q_values, dim=1)[0])
 
-        loss = self.criterion(online_old_q_values, y.detach()) # TODO: check if detach is correct
+        loss = self.criterion(online_old_q_values, y.detach())
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -442,7 +433,7 @@ class TDQNAgent:
                     1000000,
                 ]
                 if self.episode in saveEpisodes:
-                    with h5py.File("rewards.h5", "w") as f:
+                    with h5py.File(self.strategy_file, "w") as f:
                         f.create_dataset(f"reward_tots", data=self.reward_tots)
                     torch.save(self.online_network.state_dict(), "Q_network.pth")
                     # TO BE COMPLETED BY STUDENT
@@ -503,6 +494,7 @@ class TDQNAgent:
                 # Here you should write line(s) to create a variable 'batch' containing 'self.batch_size' quadruplets
                 batch = random.sample(self.exp_buffer, self.batch_size)
                 self.fn_reinforce(batch)
+
 
 class THumanAgent:
     def fn_init(self, gameboard):
